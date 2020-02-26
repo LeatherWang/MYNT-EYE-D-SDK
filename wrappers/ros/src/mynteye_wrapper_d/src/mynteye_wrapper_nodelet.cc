@@ -85,6 +85,8 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
   int skip_tmp_right_tag;
   Version spec_version;
 
+  int counter = 0;
+
   pthread_mutex_t mutex_sub_result;
   pthread_mutex_t mutex_color;
 
@@ -471,15 +473,34 @@ class MYNTEYEWrapperNodelet : public nodelet::Nodelet {
 
         switch (data.img->type()) {
           case ImageType::IMAGE_LEFT_COLOR: {
-            if (sub_result_left || sub_result_points) {
-              publishLeft(data, timestamp, sub_result_left_color,
-                  sub_result_left_mono);
+            counter++;
+            if (counter > 10)
+            {
+                if (counter > 11)
+                {
+                    counter = 0;
+                    //printf("__1: %d \n", data.img_info->timestamp-timeStampRight);
+                }
+                if (sub_result_left || sub_result_points) {
+                    publishLeft(data, timestamp, sub_result_left_color,
+                                sub_result_left_mono);
+                }
             }
           } break;
           case ImageType::IMAGE_RIGHT_COLOR: {
-            if (sub_result_right) {
-              publishRight(data, timestamp, sub_result_right_color,
-                  sub_result_right_mono);
+            counter++;
+            if (counter > 10) // fre = 30/(10/2 + 1)
+            {
+                if (counter > 11)
+                {
+                    counter = 0;
+                    //printf("__2: %d \n", data.img_info->timestamp-timeStampLeft);
+                }
+
+                if (sub_result_right) {
+                    publishRight(data, timestamp, sub_result_right_color,
+                                 sub_result_right_mono);
+                }
             }
           } break;
           case ImageType::IMAGE_DEPTH: {
