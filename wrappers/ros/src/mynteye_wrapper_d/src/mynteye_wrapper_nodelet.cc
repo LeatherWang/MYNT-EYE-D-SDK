@@ -49,7 +49,7 @@ using namespace configuru;  // NOLINT
 MYNTEYE_BEGIN_NAMESPACE
 
 bool isNeedChangeImgSyncPubFre = true;
-int skip_frame_num = 14; // fre = 30/(skip_frame_num+1)
+int skip_frame_num = 0; // fre = 30/(skip_frame_num+1)
 int sync_rev_count = 0, sync_pub_count = 0;
 ros::Time lastTimeLeft = ros::Time(0), lastTimeRight = ros::Time(0);
 ros::Time lastTimeLeftPub = ros::Time(0), lastTimeRightPub = ros::Time(0);
@@ -498,8 +498,8 @@ public:
                         if (isNeedChangeImgSyncPubFre) {
                             lastTimeLeft = timestamp;
                             if(sync_rev_count == skip_frame_num) {
-                                publishLeft(data, timestamp, sub_result_left_color, sub_result_left_mono);
                                 lastTimeLeftPub = timestamp;
+                                publishLeft(data, timestamp, sub_result_left_color, sub_result_left_mono);
                             }
 
                             sync_left_right();
@@ -516,8 +516,8 @@ public:
                         if (isNeedChangeImgSyncPubFre) {
                             lastTimeRight = timestamp;
                             if(sync_rev_count == skip_frame_num) {
-                                publishRight(data, timestamp, sub_result_right_color, sub_result_right_mono);
                                 lastTimeRightPub = timestamp;
+                                publishRight(data, timestamp, sub_result_right_color, sub_result_right_mono);
                             }
 
                             sync_left_right();
