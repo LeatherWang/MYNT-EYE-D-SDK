@@ -48,3 +48,5 @@ _install/
 /dataset/
 /mynteye/
 /*.bag
+
+wrappers/ros/src/mynteye_wrapper_d/CMakeLists.txt.*

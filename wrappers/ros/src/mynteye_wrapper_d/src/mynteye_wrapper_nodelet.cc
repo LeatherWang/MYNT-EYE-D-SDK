@@ -48,12 +48,26 @@ using namespace configuru;  // NOLINT
 
 MYNTEYE_BEGIN_NAMESPACE
 
-bool bIsChangeSyncPubFre = true;
-bool bIsSync = false;
-int skip_frame_num = 1;
-int left_count = 0, right_count = 0;
-ros::Time startTimeLeft = ros::Time(0), startTimeRight = ros::Time(0);
+bool isNeedChangeImgSyncPubFre = true;
+int skip_frame_num = 14; // fre = 30/(skip_frame_num+1)
+int sync_rev_count = 0, sync_pub_count = 0;
+ros::Time lastTimeLeft = ros::Time(0), lastTimeRight = ros::Time(0);
+ros::Time lastTimeLeftPub = ros::Time(0), lastTimeRightPub = ros::Time(0);
 
+void sync_left_right()
+{
+    if (fabs((lastTimeRight - lastTimeLeft).toSec()) < 0.003) {
+        if(sync_rev_count == skip_frame_num) {
+            ROS_FATAL_STREAM_COND(fabs((lastTimeRightPub - lastTimeLeftPub).toSec()) < 0.003,
+                                  "lastTimeLeftPub: " << lastTimeLeftPub.toSec()
+                                  << ", lastTimeRightPub: " << lastTimeRightPub.toSec());
+            sync_rev_count = -1;
+            sync_pub_count++;
+            std::cerr << "\rsync_pub_count: " << sync_pub_count;
+        }
+        sync_rev_count++;
+    }
+};
 
 namespace {
 
@@ -481,38 +495,14 @@ public:
                 {
                     if (sub_result_left || sub_result_points)
                     {
-                        if (bIsChangeSyncPubFre)
-                        {
-                            startTimeLeft = timestamp;
-                            if (!bIsSync)
-                            {
-                                if (fabs((startTimeLeft - startTimeRight).toSec()) < 0.001)
-                                {
-                                    bIsSync = true;
-                                    std::cerr << "sync ok, left stamp is: " << std::to_string(startTimeLeft.toSec())
-                                              << ", right stamp is: " << std::to_string(startTimeRight.toSec()) << std::endl;
-                                }
+                        if (isNeedChangeImgSyncPubFre) {
+                            lastTimeLeft = timestamp;
+                            if(sync_rev_count == skip_frame_num) {
+                                publishLeft(data, timestamp, sub_result_left_color, sub_result_left_mono);
+                                lastTimeLeftPub = timestamp;
                             }
-                            else
-                            {
-                                if (left_count == skip_frame_num)
-                                {
-                                    left_count = 0;
-                                    publishLeft(data, timestamp, sub_result_left_color, sub_result_left_mono);
-                                }
-                                else
-                                    left_count++;
 
-                                if (left_count == right_count)
-                                {
-                                    if (fabs((startTimeLeft - startTimeRight).toSec()) > 0.001)
-                                    {
-                                        std::cerr << "sync is error, left stamp is: " << std::to_string(startTimeLeft.toSec())
-                                                  << ", right stamp is: " << std::to_string(startTimeRight.toSec()) << std::endl;
-                                        bIsSync = false;
-                                    }
-                                }
-                            }
+                            sync_left_right();
                         }
                         else
                             publishLeft(data, timestamp, sub_result_left_color, sub_result_left_mono);
@@ -523,38 +513,14 @@ public:
                 {
                     if (sub_result_right)
                     {
-                        if (bIsChangeSyncPubFre)
-                        {
-                            startTimeRight = timestamp;
-                            if (!bIsSync)
-                            {
-                                if (fabs((startTimeLeft - startTimeRight).toSec()) < 0.001)
-                                {
-                                    bIsSync = true;
-                                    std::cerr << "sync ok, right stamp is: " << std::to_string(startTimeRight.toSec())
-                                              << ", left stamp is: " << std::to_string(startTimeLeft.toSec()) << std::endl;
-                                }
+                        if (isNeedChangeImgSyncPubFre) {
+                            lastTimeRight = timestamp;
+                            if(sync_rev_count == skip_frame_num) {
+                                publishRight(data, timestamp, sub_result_right_color, sub_result_right_mono);
+                                lastTimeRightPub = timestamp;
                             }
-                            else
-                            {
-                                if (right_count == skip_frame_num)
-                                {
-                                    right_count = 0;
-                                    publishRight(data, timestamp, sub_result_right_color, sub_result_right_mono);
-                                }
-                                else
-                                    right_count++;
 
-                                if (left_count == right_count)
-                                {
-                                    if (fabs((startTimeLeft - startTimeRight).toSec()) > 0.001)
-                                    {
-                                        std::cerr << "sync is error, right stamp is: " << std::to_string(startTimeRight.toSec())
-                                                  << ", left stamp is: " << std::to_string(startTimeLeft.toSec()) << std::endl;
-                                        bIsSync = false;
-                                    }
-                                }
-                            }
+                            sync_left_right();
                         }
                         else
                             publishRight(data, timestamp, sub_result_right_color, sub_result_right_mono);
