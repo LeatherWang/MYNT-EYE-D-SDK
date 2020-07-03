@@ -54,18 +54,21 @@ int sync_rev_count = 0, sync_pub_count = 0;
 ros::Time lastTimeLeft = ros::Time(0), lastTimeRight = ros::Time(0);
 ros::Time lastTimeLeftPub = ros::Time(0), lastTimeRightPub = ros::Time(0);
 
+std::mutex sync_mutex;
+
 void sync_left_right()
 {
     if (fabs((lastTimeRight - lastTimeLeft).toSec()) < 0.003) {
+        sync_mutex.lock();
         if(sync_rev_count == skip_frame_num) {
-            ROS_FATAL_STREAM_COND(fabs((lastTimeRightPub - lastTimeLeftPub).toSec()) < 0.003,
-                                  "lastTimeLeftPub: " << lastTimeLeftPub.toSec()
-                                  << ", lastTimeRightPub: " << lastTimeRightPub.toSec());
+            ROS_FATAL_STREAM_COND(fabs((lastTimeRightPub - lastTimeLeftPub).toSec()) >= 0.003,
+                                  "diff: " << std::to_string((lastTimeRightPub - lastTimeLeftPub).toSec()));
             sync_rev_count = -1;
             sync_pub_count++;
             std::cerr << "\rsync_pub_count: " << sync_pub_count;
         }
         sync_rev_count++;
+        sync_mutex.unlock();
     }
 };
 
